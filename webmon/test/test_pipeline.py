@@ -1,4 +1,4 @@
-from pipeline import Pipeline
+from webmon import Pipeline
 
 
 def relay(source, sink):
