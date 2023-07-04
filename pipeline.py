@@ -47,3 +47,13 @@ class Pipeline:
             raise Exception("the pipeline is not properly constructed")
 
         self.queues[0].put(message)
+        return self
+
+    def build(*args):
+        if not args:
+            raise Exception("unable to create an empty pipeline")
+
+        pipeline = Pipeline()
+        pipeline.first(args[0])
+        [pipeline.then(x) for x in args[1:]]
+        return pipeline

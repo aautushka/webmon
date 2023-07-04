@@ -10,8 +10,7 @@ config = [
 
 
 def main():
-    pipeline = Pipeline()
-    pipeline.first(schedule).then(monitor).then(report)
+    pipeline = Pipeline.build(schedule, monitor, report)
 
     pipeline.put(config)
     pipeline.wait()
