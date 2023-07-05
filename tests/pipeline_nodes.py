@@ -2,8 +2,6 @@ def relay(source, sink):
     while message := source.get():
         sink.put(message)
 
-    sink.put(None)
-
 
 class Store:
     def __init__(self):

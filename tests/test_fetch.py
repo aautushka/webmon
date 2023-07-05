@@ -11,7 +11,7 @@ async def test_http_200(aiohttp_server):
     url = server.make_url("http200")
     resp = await fetch_url({"url": url})
 
-    assert {"url": url, "code": 200, "status": "completed"} == resp
+    assert {"url": url, "code": 200, "status": "completed", "body": "success"} == resp
 
 
 @pytest.mark.asyncio
@@ -21,6 +21,7 @@ async def test_http_500(aiohttp_server):
     url = server.make_url("http500")
     resp = await fetch_url({"url": url})
 
+    resp.pop("body")
     assert {"url": url, "code": 500, "status": "completed"} == resp
 
 
@@ -31,6 +32,7 @@ async def test_http_404(aiohttp_server):
     url = server.make_url("notfound")
     resp = await fetch_url({"url": url})
 
+    resp.pop("body")
     assert {"url": url, "code": 404, "status": "completed"} == resp
 
 

@@ -22,7 +22,12 @@ class Pipeline:
         self.threads.append(thread)
 
     def run(self, source, sink, handler):
-        handler(source, sink)
+        try:
+            handler(source, sink)
+            sink.put(None)
+        except Exception as e:
+            print(f"exception {e} of type {type(e)} in {handler.__name__}")
+            traceback.print_exc()
 
     def first(self, handler):
         if self.queues:

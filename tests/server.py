@@ -11,7 +11,6 @@ async def http500(request):
 
 
 async def sleep(request):
-    print("sleep request")
     ms = request.query.get("ms", 0)
     await asyncio.sleep(int(ms) / 1000)
     return web.Response(text="slept")

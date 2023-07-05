@@ -22,7 +22,13 @@ async def fetch_url(request: dict) -> dict:
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(request["url"]) as response:
-                return {**request, "status": "completed", "code": response.status}
+                body = await response.text()
+                return {
+                    **request,
+                    "status": "completed",
+                    "code": response.status,
+                    "body": body,
+                }
     except asyncio.exceptions.TimeoutError:
         return {**request, "status": "client timeout"}
     except Exception as e:
@@ -76,4 +82,3 @@ async def run_async(source, sink) -> None:
 
 def monitor(source, sink) -> None:
     asyncio.run(run_async(source, sink))
-    sink.put(None)
