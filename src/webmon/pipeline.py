@@ -1,6 +1,7 @@
 from queue import SimpleQueue
 from threading import Thread
 import asyncio
+import traceback
 
 
 def make_queue():
