@@ -1,5 +1,6 @@
 from queue import SimpleQueue
 from threading import Thread
+import asyncio
 
 
 def make_queue():
@@ -42,11 +43,18 @@ class Pipeline:
     def wait(self) -> None:
         [x.join() for x in self.threads]
 
-    def put(self, message):
+    async def wait_async(self) -> None:
+        while self.threads:
+            self.threads[-1].join(timeout=0)
+            if not self.threads[-1].is_alive():
+                self.threads = self.threads[:-1]
+            await asyncio.sleep(0.1)
+
+    def put(self, *messages):
         if not self.queues:
             raise Exception("the pipeline is not properly constructed")
 
-        self.queues[0].put(message)
+        [self.queues[0].put(message) for message in messages]
         return self
 
     def build(*args):

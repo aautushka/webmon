@@ -1,20 +1,5 @@
 from webmon.pipeline import Pipeline
-
-
-def relay(source, sink):
-    while message := source.get():
-        sink.put(message)
-
-    sink.put(None)
-
-
-class Store:
-    def __init__(self):
-        self.data = []
-
-    def __call__(self, source, sink):
-        while message := source.get():
-            self.data.append(message)
+from tests.pipeline_nodes import Store, relay
 
 
 def test_single_node():

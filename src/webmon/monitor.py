@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 from webmon import util
+import traceback
 
 # TODO
 # error handling:
@@ -15,6 +16,7 @@ from webmon import util
 
 async def fetch_url(request: dict) -> dict:
     try:
+        print(f"incoming request {request}")
         seconds = request.get("schedule", 300)
         timeout = aiohttp.ClientTimeout(total=seconds)
 
@@ -29,30 +31,49 @@ async def fetch_url(request: dict) -> dict:
 
 
 async def run_async(source, sink) -> None:
-    tasks = []
-    first_received = None
-    while True:
-        batch = None
-        if not source.empty():
-            batch = source.get()
+    try:
+        tasks = []
+        first_received = None
+        terminate = False
 
-        if batch:
-            # for debugging
-            if not first_received:
-                first_received = util.now()
+        while not terminate:
+            batch = None
+            if not source.empty():
+                batch = source.get()
 
-            tasks += [asyncio.create_task(fetch_url(x)) for x in batch]
+                if batch == None:
+                    terminate = True
 
-        if tasks:
-            done, inprogress = await asyncio.wait(tasks, timeout=0.1)
-            tasks = [x for x in inprogress]
+            if batch:
+                # for debugging
+                if not first_received:
+                    first_received = util.now()
 
-            if done:
-                results = [x.result() for x in done]
-                sink.put(results)
+                tasks += [asyncio.create_task(fetch_url(x)) for x in batch]
 
-    await asyncio.sleep(0.5)
+            if tasks:
+                if not terminate:
+                    done, inprogress = await asyncio.wait(tasks, timeout=0.1)
+                    results = [x.result() for x in done]
+                else:
+                    done = tasks
+                    results = await asyncio.gather(*tasks)
+                    inprogress = []
+
+                # print(f"done {len(done)} inprogress {len(inprogress)}")
+                tasks = [x for x in inprogress]
+                # print(f"{len(tasks)} yet to complete")
+
+                if done:
+                    sink.put(results)
+
+            else:
+                await asyncio.sleep(0.1)
+    except Exception as e:
+        print(f"exception in monitor {e} of type {type(e)}")
+        traceback.print_exc()
 
 
 def monitor(source, sink) -> None:
     asyncio.run(run_async(source, sink))
+    sink.put(None)
