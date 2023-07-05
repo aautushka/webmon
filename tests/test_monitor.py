@@ -83,3 +83,15 @@ async def test_time_successful_concurrent_request(aiohttp_server):
     total_time = time.time() - start_time
 
     assert total_time > 1 and total_time < 2
+
+
+@pytest.mark.asyncio
+async def test_measure_time(aiohttp_server):
+    server = await start(aiohttp_server)
+    pl, output = make_pipeline()
+
+    req = make_batch(server, 1, "sleep?ms=170")
+    await pl.put(req, None).wait_async()
+
+    network_time = output[0][0]["network_time_ms"]
+    assert network_time > 170 and network_time < 200

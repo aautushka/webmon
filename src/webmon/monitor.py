@@ -1,7 +1,9 @@
 import aiohttp
 import asyncio
 from webmon import util
+from webmon import constants
 import traceback
+import time
 
 # TODO
 # error handling:
@@ -15,25 +17,31 @@ import traceback
 
 
 async def fetch_url(request: dict) -> dict:
+    result = {**request}
+    started = time.time()
     try:
-        print(f"incoming request {request}")
-        seconds = request.get("schedule", 300)
+        # print(f"incoming request {request}")
+        seconds = request.get("schedule", constants.MAX_POLL_PERIOD_SEC)
         timeout = aiohttp.ClientTimeout(total=seconds)
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(request["url"]) as response:
                 body = await response.text()
-                return {
-                    **request,
-                    "status": "completed",
-                    "code": response.status,
-                    "body": body,
-                }
+                result.update(
+                    {
+                        "status": "completed",
+                        "code": response.status,
+                        "body": body,
+                    }
+                )
     except asyncio.exceptions.TimeoutError:
-        return {**request, "status": "client timeout"}
+        result.update({"status": "client timeout"})
     except Exception as e:
         print(f"exception {e} of type {type(e)}")
-        return {**request, "status": "exception"}
+        result.update({"status": "exception"})
+
+    result["network_time_ms"] = int((time.time() - started) * 1000)
+    return result
 
 
 async def run_async(source, sink) -> None:

@@ -43,10 +43,13 @@ def test_large_request():
 
     start = time.time()
     res = run_test([{"body": text, "regex": regex}])
-    assert "regexok" == res[0]["status"]
     print(f"took {time.time() - start}")
 
+    assert "regexok" == res[0]["status"]
+
     start = time.time()
-    res = run_test([{"body": text, "regex": regex} for _ in range(0, 10)])
-    assert ["regexok" for _ in range(0, 10)] == [x["status"] for x in res]
+    iterations = 100
+    res = run_test([{"body": text, "regex": regex} for _ in range(0, iterations)])
     print(f"took {time.time() - start}")
+
+    assert ["regexok" for _ in range(0, iterations)] == [x["status"] for x in res]

@@ -58,11 +58,6 @@ def validate(source, sink) -> None:
                         )
                     else:
                         append_status(message, "regexfail")
-
-                    # if library(regex) and library(regex).search(body):
-                    #     append_status(message, "regexok")
-                    # else:
-                    #     append_status(message, "regexfail")
                 else:
                     append_status(message, "regexfail")
 

@@ -1,5 +1,6 @@
 import time
 import util
+import constants
 
 
 def schedule(source, sink):
@@ -15,7 +16,7 @@ def schedule(source, sink):
                 pass
 
         tick(request, config, sink)
-        time.sleep(1)
+        time.sleep(constants.MIN_POLL_PERIOD_SEC)
 
 
 def reload_config(request, config):
