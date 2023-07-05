@@ -38,7 +38,6 @@ async def fetch_url(request: dict) -> dict:
 async def run_async(source, sink) -> None:
     try:
         tasks = []
-        first_received = None
         terminate = False
 
         while not terminate:
@@ -50,15 +49,16 @@ async def run_async(source, sink) -> None:
                     terminate = True
 
             if batch:
-                # for debugging
-                if not first_received:
-                    first_received = util.now()
-
                 tasks += [asyncio.create_task(fetch_url(x)) for x in batch]
 
             if tasks:
                 if not terminate:
-                    done, inprogress = await asyncio.wait(tasks, timeout=0.1)
+                    execute = tasks[:constants.MAX_CONNECTIONS]
+                    onhold = tasks[constants.MAX_CONNECTIONS :]
+
+                    done, inprogress = await asyncio.wait(execute, timeout=0.03)
+                    inprogress = [x for x in inprogress] + onhold
+
                     results = [x.result() for x in done]
                 else:
                     done = tasks
@@ -66,14 +66,14 @@ async def run_async(source, sink) -> None:
                     inprogress = []
 
                 # print(f"done {len(done)} inprogress {len(inprogress)}")
-                tasks = [x for x in inprogress]
-                # print(f"{len(tasks)} yet to complete")
+                tasks = inprogress
 
                 if done:
                     sink.put(results)
 
             else:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.03)
+
     except Exception as e:
         print(f"exception in monitor {e} of type {type(e)}")
         traceback.print_exc()
