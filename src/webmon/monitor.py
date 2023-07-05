@@ -1,19 +1,9 @@
 import aiohttp
 import asyncio
-from webmon import util
-from webmon import constants
+from . import util
+from . import constants
 import traceback
 import time
-
-# TODO
-# error handling:
-# * http error status
-# * connection failure
-# * connection terminated
-# * ssl failure
-# * server timeout
-# * client timeout
-# * regex failure
 
 
 async def fetch_url(request: dict) -> dict:
@@ -34,11 +24,12 @@ async def fetch_url(request: dict) -> dict:
                         "body": body,
                     }
                 )
+    except aiohttp.ClientError as e:
+        result.update({"status": type(e).__name__})
     except asyncio.exceptions.TimeoutError:
-        result.update({"status": "client timeout"})
+        result.update({"status": "TimeoutError"})
     except Exception as e:
-        print(f"exception {e} of type {type(e)}")
-        result.update({"status": "exception"})
+        result.update({"status": "unknown error"})
 
     result["network_time_ms"] = int((time.time() - started) * 1000)
     return result

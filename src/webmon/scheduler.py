@@ -1,16 +1,23 @@
 import time
-import util
-import constants
+import logging
+
+from . import util
+from . import constants
 
 
-def schedule(source, sink):
+def schedule(source, sink) -> None:
     config = {}
+    terminate = False
 
-    while True:
+    while not terminate:
         request = None
         if not source.empty():
             try:
                 request = source.get_nowait()
+                if request and not isinstance(request, list):
+                    request = None
+                if not request:
+                    terminate = True
             except:
                 # should not happen
                 pass
@@ -19,19 +26,55 @@ def schedule(source, sink):
         time.sleep(constants.MIN_POLL_PERIOD_SEC)
 
 
-def reload_config(request, config):
+def validate_config(config: dict):
+    if not isinstance(config, dict):
+        return False
+
+    checks = [
+        ("url", str, False, None, None),
+        (
+            "schedule",
+            int,
+            False,
+            constants.MIN_POLL_PERIOD_SEC,
+            constants.MAX_POLL_PERIOD_SEC,
+        ),
+        ("regex", str, True, None, None),
+    ]
+
+    cleaned = {}
+    for check in checks:
+        field, field_type, optional, min_value, max_value = check
+        if optional and (not field in config or not config[field]):
+            continue
+
+        if (
+            not field in config
+            or not isinstance(config[field], field_type)
+            or (min_value != None and config[field] < min_value)
+            or (max_value != None and config[field] > max_value)
+        ):
+            logging.warning(f"Wrong config: {config}")
+            return {}
+
+        cleaned[field] = config[field]
+
+    return cleaned
+
+
+def reload_config(request: list, config: dict) -> None:
     now = util.now()
-    new_config = {x["url"]: {**x, "next_call": now} for x in request}
+    new_config = {
+        x["url"]: {**validate_config(x), "next_call": now}
+        for x in request
+        if validate_config(x)
+    }
     config.update(new_config)
-    # TODO proper reloading, leave as is if there is no change
-    # TODO validate config, remove items that are beyond interval [5,300]
-    # TODO validate regex
 
 
-def tick(request, config, sink):
+def tick(request: list, config: dict, sink) -> None:
     if request:
         reload_config(request, config)
-        print(request)
 
     now = util.now()
     batch = []
@@ -41,4 +84,7 @@ def tick(request, config, sink):
             batch.append(v)
 
     if batch:
-        sink.put(batch)
+        if sink.qsize() < 2:
+            sink.put(batch)
+        else:
+            logging.warning(f"Have to drop a batch of {len(batch)}, running busy")

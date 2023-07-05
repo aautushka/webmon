@@ -49,4 +49,21 @@ async def test_client_timeout(aiohttp_server):
     assert resp["network_time_ms"] > 1000 and resp["network_time_ms"] < 1100
 
     resp.pop("network_time_ms")
-    assert {"url": url, "status": "client timeout", "schedule": 1} == resp
+    assert {"url": url, "status": "TimeoutError", "schedule": 1} == resp
+
+
+@pytest.mark.asyncio
+async def test_connection_error(aiohttp_server):
+    resp = await fetch_url({"url": "http://localhost:", "schedule": 1})
+    assert "ClientConnectorError" == resp["status"]
+
+
+@pytest.mark.asyncio
+async def test_protocol_error(aiohttp_server):
+    server = await start(aiohttp_server)
+
+    url = str(server.make_url("http200"))
+    url = url.replace("http://", "https://")
+    resp = await fetch_url({"url": url})
+
+    assert "ClientConnectorSSLError" == resp["status"]

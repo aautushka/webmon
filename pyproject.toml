@@ -24,7 +24,8 @@ classifiers = [
 
 dependencies = [
     "aiohttp",
-    "asyncio"
+    "asyncio",
+    "logging"
 ]
 optional_dependencies = [
     "pytest",

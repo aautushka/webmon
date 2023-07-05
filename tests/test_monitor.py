@@ -6,7 +6,7 @@ from webmon.pipeline import Pipeline
 from webmon.monitor import monitor
 
 from tests.server import start
-from tests.pipeline_nodes import Store, relay
+from tests.pipeline_nodes import Store
 
 
 def make_pipeline() -> Pipeline:
