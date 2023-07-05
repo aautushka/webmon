@@ -1,6 +1,7 @@
 from monitor import monitor
 from reporter import report
 from scheduler import schedule
+from validator import validate
 from pipeline import Pipeline
 
 config = [
@@ -10,7 +11,7 @@ config = [
 
 
 def main():
-    pipeline = Pipeline.build(schedule, monitor, report)
+    pipeline = Pipeline.build(schedule, monitor, validate, report)
 
     pipeline.put(config)
     pipeline.wait()

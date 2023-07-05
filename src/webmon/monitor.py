@@ -1,6 +1,6 @@
 import aiohttp
 import asyncio
-import util
+from webmon import util
 
 # TODO
 # error handling:
