@@ -39,9 +39,13 @@ async def compressed(request):
     return response
 
 
+async def huge(request):
+    return web.Response(text="a" * 11 * 1024 * 1024)
+
+
 async def start(aiohttp_server):
     app = web.Application()
-    for f in [http200, http500, sleep, utf16, redirect, binary, compressed]:
+    for f in [http200, http500, sleep, utf16, redirect, binary, compressed, huge]:
         app.router.add_get(f"/{f.__name__}", f)
 
     return await aiohttp_server(app)

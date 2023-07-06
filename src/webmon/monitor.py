@@ -24,7 +24,14 @@ async def fetch_url(request: dict) -> dict:
                     }
                 )
 
-                if "regex" in request and response.charset is not None:
+                content_len = int(
+                    response.headers.get("content-length", constants.MAX_CONTENT_LENGTH)
+                )
+                if (
+                    "regex" in request
+                    and response.charset is not None
+                    and content_len < constants.MAX_CONTENT_LENGTH
+                ):
                     result["body"] = await response.text()
 
     except aiohttp.ClientError as e:

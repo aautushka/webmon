@@ -118,3 +118,15 @@ async def test_compressed_content(aiohttp_server):
     resp = await fetch_url({"url": url, "regex": "abc"})
 
     assert "compressed content" == resp["body"]
+
+
+@pytest.mark.asyncio
+async def test_skip_huge_responses(aiohttp_server):
+    server = await start(aiohttp_server)
+
+    url = server.make_url("huge")
+    resp = await fetch_url({"url": url, "regex": "abc"})
+
+    assert not "body" in resp
+    assert 200 == resp["code"]
+    assert "regex" in resp
