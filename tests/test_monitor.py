@@ -94,8 +94,8 @@ async def test_measure_time(aiohttp_server):
     req = make_batch(server, 1, "sleep?ms=170")
     await pl.put(req, None).wait_async()
 
-    network_time = output[0][0]["network_time_ms"]
-    assert network_time > 170 and network_time < 200
+    reponse_time = output[0][0]["response_time_ms"]
+    assert reponse_time > 170 and reponse_time < 200
 
 
 @pytest.mark.skip(reason="need a real thing for this test")

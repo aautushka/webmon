@@ -4,27 +4,29 @@ from . import util
 from . import constants
 import traceback
 import time
+import logging
 
 
 async def fetch_url(request: dict) -> dict:
     result = {**request}
     started = time.time()
     try:
-        # print(f"incoming request {request}")
         seconds = request.get("schedule", constants.MAX_POLL_PERIOD_SEC)
         timeout = aiohttp.ClientTimeout(total=seconds)
 
         result["ts"] = util.now()
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(request["url"]) as response:
-                body = await response.text()
+            async with session.get(request["url"], allow_redirects=False) as response:
                 result.update(
                     {
                         "status": "completed",
                         "code": response.status,
-                        "body": body,
                     }
                 )
+
+                if "regex" in request and response.charset is not None:
+                    result["body"] = await response.text()
+
     except aiohttp.ClientError as e:
         result.update({"status": type(e).__name__})
     except asyncio.exceptions.TimeoutError:
@@ -32,19 +34,27 @@ async def fetch_url(request: dict) -> dict:
     except Exception as e:
         result.update({"status": "unknown error"})
 
-    result["network_time_ms"] = int((time.time() - started) * 1000)
+    result["response_time_ms"] = int((time.time() - started) * 1000)
     return result
 
 
 async def run_async(source, sink) -> None:
-    try:
-        tasks = []
-        terminate = False
+    tasks: list[asyncio.Task] = []
+    terminate = False
 
-        while not terminate:
-            batch = None
-            if not source.empty():
-                batch = source.get()
+    while not terminate:
+        batch = None
+
+        try:
+            # i think we want to be smarter than this way of limiting resources
+            # we can just start actively dropping incoming requests if we reach our limits
+            # but also we do not want to allow some rogue site to consume all our capacity
+            if len(tasks) < 2 * constants.MAX_CONNECTIONS and not source.empty():
+                try:
+                    batch = source.get_nowait()
+                except:
+                    # should not happen
+                    pass
 
                 if batch == None:
                     terminate = True
@@ -73,10 +83,9 @@ async def run_async(source, sink) -> None:
 
             else:
                 await asyncio.sleep(0.03)
-
-    except Exception as e:
-        print(f"exception in monitor {e} of type {type(e)}")
-        traceback.print_exc()
+        except Exception as e:
+            logging.error(f"Exception in monitor {e} of type {type(e)}")
+            traceback.print_exc()
 
 
 def monitor(source, sink) -> None:
