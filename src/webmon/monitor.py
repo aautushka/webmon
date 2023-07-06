@@ -14,6 +14,7 @@ async def fetch_url(request: dict) -> dict:
         seconds = request.get("schedule", constants.MAX_POLL_PERIOD_SEC)
         timeout = aiohttp.ClientTimeout(total=seconds)
 
+        result["ts"] = util.now()
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(request["url"]) as response:
                 body = await response.text()
@@ -53,22 +54,21 @@ async def run_async(source, sink) -> None:
 
             if tasks:
                 if not terminate:
-                    execute = tasks[:constants.MAX_CONNECTIONS]
+                    execute = tasks[: constants.MAX_CONNECTIONS]
                     onhold = tasks[constants.MAX_CONNECTIONS :]
 
-                    done, inprogress = await asyncio.wait(execute, timeout=0.03)
-                    inprogress = [x for x in inprogress] + onhold
+                    done, pending = await asyncio.wait(execute, timeout=0.03)
 
+                    inprogress = list(pending) + onhold
                     results = [x.result() for x in done]
                 else:
-                    done = tasks
                     results = await asyncio.gather(*tasks)
                     inprogress = []
 
                 # print(f"done {len(done)} inprogress {len(inprogress)}")
                 tasks = inprogress
 
-                if done:
+                if results:
                     sink.put(results)
 
             else:

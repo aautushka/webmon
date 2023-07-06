@@ -1,3 +1,5 @@
+from typing import Callable
+
 from queue import SimpleQueue
 from threading import Thread
 import asyncio
@@ -13,7 +15,7 @@ class Pipeline:
         self.queues = []
         self.threads = []
 
-    def add_node(self, handler):
+    def add_node(self, handler: Callable) -> None:
         source = self.queues[-2]
         sink = self.queues[-1]
 
@@ -22,7 +24,7 @@ class Pipeline:
 
         self.threads.append(thread)
 
-    def run(self, source, sink, handler):
+    def run(self, source, sink, handler: Callable) -> None:
         try:
             handler(source, sink)
             sink.put(None)
@@ -30,7 +32,7 @@ class Pipeline:
             print(f"exception {e} of type {type(e)} in {handler.__name__}")
             traceback.print_exc()
 
-    def first(self, handler):
+    def first(self, handler: Callable):
         if self.queues:
             raise Exception("already have the first node")
 
@@ -38,7 +40,7 @@ class Pipeline:
         self.add_node(handler)
         return self
 
-    def then(self, handler):
+    def then(self, handler: Callable):
         if not self.queues:
             raise Exception("no first node")
 
@@ -63,7 +65,7 @@ class Pipeline:
         [self.queues[0].put(message) for message in messages]
         return self
 
-    def build(*args):
+    def build(*args: Callable):
         if not args:
             raise Exception("unable to create an empty pipeline")
 

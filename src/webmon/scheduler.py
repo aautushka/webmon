@@ -1,12 +1,14 @@
 import time
 import logging
 
+from typing import Optional
+
 from . import util
 from . import constants
 
 
 def schedule(source, sink) -> None:
-    config = {}
+    config: dict = {}
     terminate = False
 
     while not terminate:
@@ -26,7 +28,7 @@ def schedule(source, sink) -> None:
         time.sleep(constants.MIN_POLL_PERIOD_SEC)
 
 
-def validate_config(config: dict):
+def validate_config(config: dict) -> dict:
     if not isinstance(config, dict):
         return False
 
@@ -51,8 +53,8 @@ def validate_config(config: dict):
         if (
             not field in config
             or not isinstance(config[field], field_type)
-            or (min_value != None and config[field] < min_value)
-            or (max_value != None and config[field] > max_value)
+            or (min_value is not None and config[field] < min_value)
+            or (max_value is not None and config[field] > max_value)
         ):
             logging.warning(f"Wrong config: {config}")
             return {}
@@ -65,22 +67,22 @@ def validate_config(config: dict):
 def reload_config(request: list, config: dict) -> None:
     now = util.now()
     new_config = {
-        x["url"]: {**validate_config(x), "next_call": now}
+        x["url"]: {**validate_config(x), "ts": now}
         for x in request
         if validate_config(x)
     }
     config.update(new_config)
 
 
-def tick(request: list, config: dict, sink) -> None:
+def tick(request: Optional[list], config: dict, sink) -> None:
     if request:
         reload_config(request, config)
 
     now = util.now()
     batch = []
     for k, v in config.items():
-        if now > v["next_call"]:
-            v["next_call"] += v["schedule"]
+        if now > v["ts"]:
+            v["ts"] += v["schedule"]
             batch.append(v)
 
     if batch:

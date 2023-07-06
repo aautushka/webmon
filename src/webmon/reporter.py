@@ -1,4 +1,3 @@
-def report(source, sink):
-    while True:
-        request = source.get()
+def report(source, sink) -> None:
+    while request := source.get():
         print(request)

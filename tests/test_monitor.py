@@ -10,12 +10,12 @@ from tests.server import start
 from tests.pipeline_nodes import Store
 
 
-def make_pipeline() -> Pipeline:
+def make_pipeline() -> tuple[Pipeline, list[dict]]:
     store = Store()
     return (Pipeline.build(monitor, store), store.data)
 
 
-def make_batch(server, count=1, path="http200", schedule=1) -> dict:
+def make_batch(server, count=1, path="http200", schedule=1) -> list[dict]:
     url = server.make_url(path)
     return [{"url": url, "schedule": schedule} for _ in range(0, count)]
 

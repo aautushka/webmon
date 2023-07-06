@@ -4,15 +4,17 @@ import logging
 
 from webmon.pipeline import Pipeline
 from webmon.scheduler import schedule
+from webmon.monitor import monitor
 
 import webmon.constants as constants
 from tests.pipeline_nodes import Store, Sleep
 
+# i'll have a bunch of warnings in my tests i do not want them to spoil my console output
 logger = logging.getLogger()
 logger.disabled = True
 
 
-def make_pipeline() -> Pipeline:
+def make_pipeline() -> tuple[Pipeline, list[dict]]:
     store = Store()
     return (Pipeline.build(monitor, store), store.data)
 

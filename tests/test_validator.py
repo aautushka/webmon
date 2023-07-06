@@ -5,11 +5,11 @@ import time
 import os
 
 
-def make_request(body, regex):
+def make_request(body: str, regex: str) -> list[dict]:
     return [{"body": body, "regex": regex}]
 
 
-def run_test(*requests):
+def run_test(*requests: dict) -> list[dict]:
     store = Store()
     pl = Pipeline.build(validate, store)
     pl.put(*requests, None).wait()

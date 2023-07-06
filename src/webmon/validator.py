@@ -1,4 +1,7 @@
 import re
+
+from typing import Optional
+
 from multiprocessing.pool import Pool
 from multiprocessing import cpu_count
 
@@ -7,7 +10,7 @@ class RegexLibrary:
     def __init__(self):
         self.lib = {}
 
-    def __call__(self, regex):
+    def __call__(self, regex: str) -> Optional[re.Pattern]:
         if regex in self.lib:
             return self.lib[regex]
 
@@ -20,25 +23,23 @@ class RegexLibrary:
         return compiled
 
 
-def append_status(message, status):
-    if "status" in message:
-        message["status"] += f",{status}"
+def append_status(request: dict, status: str):
+    if "status" in request:
+        request["status"] += f",{status}"
     else:
-        message["status"] = status
+        request["status"] = status
 
 
-def search_regex(message):
-    library = RegexLibrary()
-
-    if library(message["regex"]).search(message["body"]):
-        append_status(message, "regexok")
+def search_regex(regex: Optional[re.Pattern], request: dict) -> dict:
+    if regex is not None and regex.search(request["body"]):
+        append_status(request, "regexok")
     else:
-        append_status(message, "regexfail")
+        append_status(request, "regexfail")
 
     # optimization: we don't need to copy memory one more time
     # in my tests just this one line saves 20%
-    message.pop("body")
-    return message
+    request.pop("body")
+    return request
 
 
 def validate(source, sink) -> None:
@@ -54,7 +55,9 @@ def validate(source, sink) -> None:
                     if library(regex):
                         pending = True
                         pool.apply_async(
-                            search_regex, [message], callback=lambda x: sink.put(x)
+                            search_regex,
+                            [library(regex), message],
+                            callback=lambda x: sink.put(x),
                         )
                     else:
                         append_status(message, "regexfail")
