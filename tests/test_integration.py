@@ -35,6 +35,7 @@ async def test_integration_no_database(aiohttp_server):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="needs a local database set up")
 async def test_database_integration(aiohttp_server):
     server = await start(aiohttp_server)
 

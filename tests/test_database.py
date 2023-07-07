@@ -25,6 +25,7 @@ rows = [
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="needs a local database set up")
 async def test_database():
     details = ConnectionDetails(
         user="newuser",
