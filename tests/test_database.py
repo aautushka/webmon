@@ -1,7 +1,7 @@
 import time
 import pytest
 import asyncio
-import asyncpg
+import asyncpg  # type: ignore
 
 from webmon.pipeline import Pipeline
 from webmon.database import Database, ConnectionDetails, count_records
@@ -33,14 +33,6 @@ async def test_database():
         database="webmon",
         ssl="prefer",
     )
-
-    # details = ConnectionDetails(
-    #     user="avnadmin",
-    #     password="*********",
-    #     host="pg-144798e6-autushka-7fec.aivencloud.com",
-    #     database="defaultdb",
-    #     port=25105,
-    # )
 
     database = Database(details)
     pl = Pipeline.build(database)

@@ -1,5 +1,7 @@
 import asyncio
-import asyncpg
+
+import asyncpg  # type: ignore
+
 import logging
 from datetime import datetime
 
