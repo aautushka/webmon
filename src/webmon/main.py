@@ -34,7 +34,9 @@ def print_to_console(source, sink) -> None:
         sink.put(batch)
 
 
-def run_pipeline(url_config: list[dict], db_config: Optional[ConnectionDetails]) -> None:
+def run_pipeline(
+    url_config: list[dict], db_config: Optional[ConnectionDetails]
+) -> None:
     pipeline = Pipeline.build(schedule, monitor, validate, print_to_console)
 
     if db_config:

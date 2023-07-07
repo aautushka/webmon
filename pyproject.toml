@@ -6,7 +6,7 @@ requires = ["flit_core >=3.8.0,<4"]
 name = "webmon"
 description = ""
 version = "0.0.1"
-requires-python = ">=3.9"
+requires-python = ">=3.8"
 authors = [
         {name = "Anton Aŭtuška", email = "avtushko@gmail.com"},
 ]
@@ -37,7 +37,7 @@ executionEnvironments = [
 [project.scripts]
 webmon = "webmon.main:main"
 
-[project.optional_dependencies]
+[project.optional-dependencies]
 test = [
      "pytest",
      "pytest-aiohttp",
