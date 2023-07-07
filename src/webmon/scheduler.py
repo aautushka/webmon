@@ -56,7 +56,7 @@ def validate_config(config: dict) -> dict:
             or (min_value is not None and config[field] < min_value)
             or (max_value is not None and config[field] > max_value)
         ):
-            logging.warning(f"Wrong config: {config}")
+            logging.warning(f"Wrong '{field}' config: {config}")
             return {}
 
         cleaned[field] = config[field]

@@ -45,12 +45,8 @@ class Pipeline:
         self.threads.append(thread)
 
     def run(self, source, sink, handler: Callable) -> None:
-        try:
-            handler(source, sink)
-            sink.put(None)
-        except Exception as e:
-            print(f"exception {e} of type {type(e)} in {handler.__name__}")
-            traceback.print_exc()
+        handler(source, sink)
+        sink.put(None)
 
     def first(self, handler: Callable):
         if self.queues:
