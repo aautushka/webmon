@@ -39,6 +39,7 @@ webmon = "webmon.main:main"
 
 [project.optional-dependencies]
 test = [
+     "mypy",
      "pytest",
      "pytest-aiohttp",
      "pytest-asyncio"
