@@ -54,6 +54,11 @@ def run_pipeline(
 
 def read_config(path: str) -> Optional[list[dict]]:
     try:
+        return json.loads(path)
+    except Exception as e:
+        pass
+
+    try:
         with open(path, "r") as f:
             return json.loads(f.read())
     except Exception as e:
@@ -91,7 +96,7 @@ def configuration_from_args(
     return (config, ConnectionDetails(**dbconfig, ssl=args.ssl, port=args.port))  # type: ignore
 
 
-def main() -> int:
+def parse_args(args_list: Optional[list[str]] = None):
     parser = argparse.ArgumentParser(prog="webmon", description="Web monitoring tool")
 
     parser.add_argument(
@@ -118,15 +123,15 @@ def main() -> int:
         "--ssl", action="store", default="require", type=str, help="posgres SSL mode"
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(args_list)
+    return args
 
+
+def main() -> int:
+    args = parse_args()
     conf = configuration_from_args(args)
     if not conf:
         return 1
 
     run_pipeline(*conf)
     return 0
-
-
-if __name__ == "__main__":
-    main()

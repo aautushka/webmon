@@ -6,6 +6,7 @@ from webmon.monitor import monitor
 from webmon.scheduler import schedule
 from webmon.validator import validate
 from webmon.database import Database, ConnectionDetails, count_records
+from webmon.main import run_pipeline
 
 from tests.server import start
 from tests.pipeline_nodes import Store
@@ -55,3 +56,7 @@ async def test_database_integration(aiohttp_server):
 
     after = await count_records(details)
     assert after - before >= 1
+
+
+def test_run_pipeline_with_no_accident():
+    run_pipeline(None, None)
