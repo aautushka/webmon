@@ -88,7 +88,7 @@ def configuration_from_args(
         print(f'WARNING: missing database configuration paramters, see --help"')
         return None
 
-    return (config, ConnectionDetails(**dbconfig, ssl=args.ssl, port=args.port))
+    return (config, ConnectionDetails(**dbconfig, ssl=args.ssl, port=args.port)) # type: ignore
 
 
 def main() -> int:
