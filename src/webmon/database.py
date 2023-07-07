@@ -19,6 +19,8 @@ class ConnectionDetails(NamedTuple):
     password: str
     database: str
     host: str
+    port: int = 5432
+    ssl: str = "require"
 
 
 async def create_table(conn) -> None:
@@ -181,3 +183,6 @@ class Database:
                 tasks = list(incomplete)
             else:
                 await asyncio.sleep(1)
+
+        if pool:
+            await pool.close()

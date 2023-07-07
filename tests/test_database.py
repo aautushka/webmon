@@ -27,8 +27,20 @@ rows = [
 @pytest.mark.asyncio
 async def test_database():
     details = ConnectionDetails(
-        user="newuser", password="password", host="localhost", database="webmon"
+        user="newuser",
+        password="password",
+        host="localhost",
+        database="webmon",
+        ssl="prefer",
     )
+
+    # details = ConnectionDetails(
+    #     user="avnadmin",
+    #     password="*********",
+    #     host="pg-144798e6-autushka-7fec.aivencloud.com",
+    #     database="defaultdb",
+    #     port=25105,
+    # )
 
     database = Database(details)
     pl = Pipeline.build(database)

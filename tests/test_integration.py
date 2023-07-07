@@ -39,7 +39,11 @@ async def test_database_integration(aiohttp_server):
     server = await start(aiohttp_server)
 
     details = ConnectionDetails(
-        user="newuser", password="password", host="localhost", database="webmon"
+        user="newuser",
+        password="password",
+        host="localhost",
+        database="webmon",
+        ssl="prefer",
     )
     pl = Pipeline.build(schedule, monitor, validate, Database(details))
 

@@ -21,8 +21,21 @@ def print_to_console(source, sink):
 
 def main():
     details = ConnectionDetails(
-        user="newuser", password="password", host="localhost", database="webmon"
+        user="newuser",
+        password="password",
+        host="localhost",
+        database="webmon",
+        ssl="prefer",
     )
+
+    # details = ConnectionDetails(
+    #     user="avnadmin",
+    #     password="******",
+    #     host="pg-144798e6-autushka-7fec.aivencloud.com",
+    #     database="defaultdb",
+    #     port=25105,
+    # )
+
     pipeline = Pipeline.build(
         schedule, monitor, validate, print_to_console, Database(details)
     )
