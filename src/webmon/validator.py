@@ -48,16 +48,21 @@ def validate(source, sink) -> None:
     pool = Pool(processes=max(cpu_count() - 1, 1))  # leave one core alone
 
     while batch := source.get():
+        out = []
         for message in batch:
             pending = False
             if regex := message.get("regex", None):
                 if body := message.get("body", None):
                     if library(regex):
                         pending = True
+
+                        def forward(request: dict):
+                            sink.put([request])
+
                         pool.apply_async(
                             search_regex,
                             [library(regex), message],
-                            callback=lambda x: sink.put(x),
+                            callback=forward,
                         )
                     else:
                         append_status(message, "regexfail")
@@ -65,7 +70,10 @@ def validate(source, sink) -> None:
                     append_status(message, "regexfail")
 
             if not pending:
-                sink.put(message)
+                out.append(message)
+
+        if out:
+            sink.put(out)
 
     pool.close()
     pool.join()

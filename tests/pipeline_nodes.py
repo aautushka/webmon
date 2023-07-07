@@ -24,3 +24,8 @@ class Sleep:
         while message := source.get():
             time.sleep(self.secs)
             sink.put(message)
+
+
+def drop(source, sink) -> None:
+    while message := source.get():
+        pass

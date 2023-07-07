@@ -1,6 +1,8 @@
 from typing import Callable
 
 from queue import SimpleQueue
+from queue import Empty
+
 from threading import Thread
 import asyncio
 import traceback
@@ -8,6 +10,24 @@ import traceback
 
 def make_queue():
     return SimpleQueue()
+
+
+def retrieve_everything(queue) -> tuple[list, bool]:
+    result = []
+    last = False
+
+    try:
+        while not queue.empty():
+            item = queue.get_nowait()
+            if item:
+                result.append(item)
+            else:
+                last = True
+                break
+    except Empty:
+        pass
+
+    return (result, last)
 
 
 class Pipeline:
