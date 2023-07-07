@@ -29,11 +29,6 @@ dependencies = [
     "asyncpg",
     "argparse"
 ]
-optional_dependencies = [
-    "pytest",
-    "pytest-aiohttp",
-    "pytest-asyncio"
-]
 
 executionEnvironments = [
   { root = "src" }
@@ -41,6 +36,14 @@ executionEnvironments = [
 
 [project.scripts]
 webmon = "webmon.main:main"
+
+[project.optional_dependencies]
+test = [
+     "pytest",
+     "pytest-aiohttp",
+     "pytest-asyncio"
+]
+
 
 [tool.pytest.ini_options]
 pythonpath = [
