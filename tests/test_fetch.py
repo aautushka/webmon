@@ -1,4 +1,5 @@
 from webmon.monitor import fetch_url
+import webmon.constants as constants
 import pytest
 
 from tests.server import start
@@ -121,12 +122,12 @@ async def test_compressed_content(aiohttp_server):
 
 
 @pytest.mark.asyncio
-async def test_skip_huge_responses(aiohttp_server):
+async def test_trim_huge_responses(aiohttp_server):
     server = await start(aiohttp_server)
 
     url = server.make_url("huge")
     resp = await fetch_url({"url": url, "regex": "abc"})
 
-    assert not "body" in resp
+    assert constants.MAX_CONTENT_LENGTH == len(resp["body"])
     assert 200 == resp["code"]
     assert "regex" in resp

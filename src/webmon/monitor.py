@@ -7,6 +7,22 @@ import time
 import logging
 
 
+async def read_from_stream(stream: aiohttp.StreamReader, num_bytes: int) -> bytes:
+    data = bytes()
+    while chunk := await stream.read(num_bytes - len(data)):
+        data += chunk
+
+    return data
+
+
+async def read_chunked_response(
+    response: aiohttp.ClientResponse, num_bytes: int
+) -> str:
+    data = await read_from_stream(response.content, constants.MAX_CONTENT_LENGTH)
+
+    return str(data, response.get_encoding())
+
+
 async def fetch_url(request: dict) -> dict:
     result = {**request}
     started = time.time()
@@ -24,15 +40,20 @@ async def fetch_url(request: dict) -> dict:
                     }
                 )
 
-                content_len = int(
-                    response.headers.get("content-length", constants.MAX_CONTENT_LENGTH)
-                )
-                if (
-                    "regex" in request
-                    and response.charset is not None
-                    and content_len < constants.MAX_CONTENT_LENGTH
+                if "regex" in request and (
+                    response.content_type.startswith("text/")
+                    or response.charset is not None
                 ):
-                    result["body"] = await response.text()
+                    content_len = response.headers.get("content-length", None)
+                    if (
+                        content_len is not None
+                        and int(content_len) < constants.MAX_CONTENT_LENGTH
+                    ):
+                        result["body"] = await response.text()
+                    else:
+                        result["body"] = await read_chunked_response(
+                            response, constants.MAX_CONTENT_LENGTH
+                        )
 
     except aiohttp.ClientError as e:
         result.update({"status": type(e).__name__})
