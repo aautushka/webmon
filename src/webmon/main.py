@@ -29,7 +29,9 @@ test_db = ConnectionDetails(
 def print_to_console(source, sink) -> None:
     while batch := source.get():
         for b in batch:
-            print([v for k, v in b.items()])
+            # print([v for k, v in b.items()])
+            print(f'{b["url"]:<50}\t{b["status"]}')
+            pass
 
         sink.put(batch)
 

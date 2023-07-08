@@ -1,7 +1,6 @@
 import time
 import logging
 
-
 from webmon.pipeline import Pipeline
 from webmon.scheduler import schedule
 from webmon.monitor import monitor
@@ -32,7 +31,7 @@ def test_uber_fast_schedule():
     constants.MIN_POLL_PERIOD_SEC = 0
 
     store = Store()
-    pl = Pipeline.build(schedule, store)
+    pl = Pipeline.build(lambda x, y: schedule(x, y, 0), store)
 
     pl.put([{"url": "http://acme.com", "schedule": 0}])
     time.sleep(0.1)
@@ -47,7 +46,7 @@ def test_drop_because_pipeline_is_busy():
     constants.MIN_POLL_PERIOD_SEC = 0
 
     store = Store()
-    pl = Pipeline.build(schedule, Sleep(0.2), store)
+    pl = Pipeline.build(lambda x, y: schedule(x, y, 0), Sleep(0.2), store)
 
     pl.put([{"url": "http://acme.com", "schedule": 0}])
     time.sleep(0.1)

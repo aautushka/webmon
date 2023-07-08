@@ -1,5 +1,6 @@
 import time
 import logging
+import random
 
 from typing import Optional
 
@@ -7,7 +8,7 @@ from . import util
 from . import constants
 
 
-def schedule(source, sink) -> None:
+def schedule(source, sink, period=0.05) -> None:
     config: dict = {}
     terminate = False
 
@@ -25,7 +26,7 @@ def schedule(source, sink) -> None:
                 pass
 
         tick(request, config, sink)
-        time.sleep(constants.MIN_POLL_PERIOD_SEC)
+        time.sleep(period)
 
 
 def validate_config(config: dict) -> dict:
@@ -65,12 +66,28 @@ def validate_config(config: dict) -> dict:
 
 
 def reload_config(request: list, config: dict) -> None:
-    now = util.now()
     new_config = {
-        x["url"]: {**validate_config(x), "ts": now}
-        for x in request
-        if validate_config(x)
+        x["url"]: {**validate_config(x)} for x in request if validate_config(x)
     }
+
+    if new_config:
+        now = util.now()
+
+        def randomize_time():
+            """generate time offset in fraction of seconds  based on max  connections per sec"""
+            connections_per_second = constants.MAX_POLL_PERIOD_SEC
+            maxrange = len(new_config.keys()) // connections_per_second * 1000
+
+            if maxrange > 0:
+                return random.randrange(0, maxrange) / 1000
+
+            return 0
+
+        # we want to randomize time as to avoid peaks and spread the load evenly
+        new_config = {
+            k: {**v, "ts": now + randomize_time()} for k, v in new_config.items()
+        }
+
     config.update(new_config)
 
 
@@ -86,7 +103,7 @@ def tick(request: Optional[list], config: dict, sink) -> None:
             batch.append(v)
 
     if batch:
-        if sink.qsize() < 2:
+        if sink.qsize() < 2 * len(config.keys()):
             sink.put(batch)
         else:
             logging.warning(f"Have to drop a batch of {len(batch)}, running busy")

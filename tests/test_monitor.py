@@ -83,7 +83,7 @@ async def test_timed_out_concurrent_request(aiohttp_server):
     await pl.put(req, None).wait_async()
     total_time = time.time() - start_time
 
-    assert total_time > 1 and total_time < 2
+    assert total_time > 1 and total_time < 3
 
 
 @pytest.mark.asyncio

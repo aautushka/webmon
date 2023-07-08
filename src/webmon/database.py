@@ -65,14 +65,14 @@ async def create_db_connection_pool(details: ConnectionDetails) -> Any:
     try:
         pool = await asyncpg.create_pool(
             **details._asdict(),
-            min_size=constants.PG_POOL_SIZE,
-            max_size=constants.PG_POOL_SIZE,
+            min_size=1,
+            max_size=max(1, constants.PG_POOL_SIZE),
         )
 
         async with pool.acquire() as connection:
             await create_table(connection)
 
-    except asyncpg.PostgresError:
+    except asyncpg.PostgresError as e:
         pass
     except OSError:
         pass
