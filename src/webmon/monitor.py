@@ -8,7 +8,12 @@ import logging
 
 import resource
 
-resource.setrlimit(resource.RLIMIT_NOFILE, (2**14, resource.RLIM_INFINITY))
+
+def set_max_file_limit() -> None:
+    try:
+        resource.setrlimit(resource.RLIMIT_NOFILE, (2**14, resource.RLIM_INFINITY))
+    except ValueError:  # not everybody allows to do that
+        pass
 
 
 async def read_from_stream(stream: aiohttp.StreamReader, num_bytes: int) -> bytes:
@@ -184,4 +189,5 @@ async def run_async(source, sink) -> None:
 
 
 def monitor(source, sink) -> None:
+    set_max_file_limit()
     asyncio.run(run_async(source, sink))
