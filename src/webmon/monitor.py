@@ -1,15 +1,19 @@
 import aiohttp
 import asyncio
+
 from . import util
 from . import constants
+
 import traceback
 import time
 import logging
-
 import resource
+
+from typing import Optional, Generator, Callable
 
 
 def set_max_file_limit() -> None:
+    """Increase the number of open files allowed for this process."""
     try:
         resource.setrlimit(resource.RLIMIT_NOFILE, (2**14, resource.RLIM_INFINITY))
     except ValueError:  # not everybody allows to do that
@@ -66,7 +70,6 @@ async def fetch_with_session(session: aiohttp.ClientSession, request: dict) -> d
     except aiohttp.ClientError as e:
         result.update({"status": type(e).__name__})
     except asyncio.exceptions.TimeoutError:
-        # print('timeout')
         result.update({"status": "TimeoutError"})
     except Exception as e:
         # print(f'exception happend {e} of type {type(e)}')
@@ -114,6 +117,12 @@ class SessionPool:
         await asyncio.gather(*tasks)
         await asyncio.sleep(0.25)  # as per aiohttp documentation
 
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.close()
+
 
 def read_batch(pending: int, source) -> tuple[list[dict], bool]:
     """Read everything from queue until the queue is empty or we hit a limit."""
@@ -129,13 +138,23 @@ def read_batch(pending: int, source) -> tuple[list[dict], bool]:
             # should not happen
             pass
 
-        if batch == None:
+        if batch is None:
             terminate = True
             break
         else:
             result += batch
 
     return (result, terminate)
+
+
+def try_next_batch(
+    count_tasks: Callable, source
+) -> Generator[Optional[list[dict]], None, None]:
+    """Generate batches or nothing withougt blocking while no sentinel met"""
+    terminate = False
+    while not terminate:
+        batch, terminate = read_batch(count_tasks(), source)
+        yield batch
 
 
 async def run_async(source, sink) -> None:
@@ -146,48 +165,33 @@ async def run_async(source, sink) -> None:
     """
 
     tasks: list[asyncio.Task] = []
-    terminate = False
-
-    pool = SessionPool()
-    while not terminate:
-        batch: list[dict] = []
-
-        try:
-            batch, terminate = read_batch(len(tasks), source)
-
+    async with SessionPool() as pool:
+        for batch in try_next_batch(lambda: len(tasks), source):
             if batch:
                 tasks += [
                     asyncio.create_task(fetch_with_session(pool(x), x)) for x in batch
                 ]
 
             if tasks:
-                if not terminate:
-                    execute = tasks[: constants.MAX_CONNECTIONS]
-                    onhold = tasks[constants.MAX_CONNECTIONS :]
+                execute = tasks[: constants.MAX_CONNECTIONS]
+                onhold = tasks[constants.MAX_CONNECTIONS :]
 
-                    done, pending = await asyncio.wait(execute, timeout=0.3)
-                    # print(f"done {len(done)} pending {len(pending)}")
+                done, pending = await asyncio.wait(execute, timeout=0.3)
+                tasks = list(pending) + onhold
+                # print(f"done {len(done)} pending {len(pending)} {len(tasks)}")
 
-                    inprogress = list(pending) + onhold
+                if done:
                     results = [x.result() for x in done]
-                else:
-                    results = await asyncio.gather(*tasks)
-                    inprogress = []
-
-                tasks = inprogress
-
-                if results:
                     sink.put(results)
 
             else:
                 await asyncio.sleep(0.1)
-        except Exception as e:
-            logging.error(f"Exception in monitor {e} of type {type(e)}")
-            traceback.print_exc()
 
-    await pool.close()
+        if tasks:
+            sink.put(await asyncio.gather(*tasks))
 
 
 def monitor(source, sink) -> None:
+    """Synchronous pipeline handler. Ment to be run in a separate thread"""
     set_max_file_limit()
     asyncio.run(run_async(source, sink))

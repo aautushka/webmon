@@ -10,6 +10,7 @@ import argparse
 import json
 import signal
 import sys
+import time
 
 test_config = [
     {"url": "http://localhost:3000/test/test200", "schedule": 1, "regex": None},
@@ -27,18 +28,19 @@ test_db = ConnectionDetails(
 
 
 def print_to_console(source, sink) -> None:
+    """Pipeline handler that prints its inputs to console."""
     while batch := source.get():
         for b in batch:
             # print([v for k, v in b.items()])
             print(f'{b["url"]:<50}\t{b["status"]}')
             pass
-
         sink.put(batch)
 
 
 def run_pipeline(
     url_config: list[dict], db_config: Optional[ConnectionDetails]
 ) -> None:
+    """Build and run the pipeline. This is crux of the matter."""
     pipeline = Pipeline.build(schedule, monitor, validate, print_to_console)
 
     if db_config:
@@ -54,14 +56,15 @@ def run_pipeline(
     pipeline.wait()
 
 
-def read_config(path: str) -> Optional[list[dict]]:
+def load_config(json_or_file_path: str) -> Optional[list[dict]]:
+    """Load config from JSON or file."""
     try:
-        return json.loads(path)
+        return json.loads(json_or_file_path)
     except Exception as e:
         pass
 
     try:
-        with open(path, "r") as f:
+        with open(json_or_file_path, "r") as f:
             return json.loads(f.read())
     except Exception as e:
         return None
@@ -70,6 +73,7 @@ def read_config(path: str) -> Optional[list[dict]]:
 def configuration_from_args(
     args,
 ) -> Optional[tuple[list[Any], Optional[ConnectionDetails]]]:
+    """Choose the pipeline configuration based on command line arguments."""
     if args.test:
         return (test_config, test_db)
 
@@ -77,7 +81,7 @@ def configuration_from_args(
         print("ERROR: --config is required to contain to the config file")
         return None
 
-    config = read_config(args.config)
+    config = load_config(args.config)
     if not config:
         print(f'ERROR: unable to read config json from "{args.config}"')
         return None
@@ -99,6 +103,7 @@ def configuration_from_args(
 
 
 def parse_args(args_list: Optional[list[str]] = None):
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(prog="webmon", description="Web monitoring tool")
 
     parser.add_argument(

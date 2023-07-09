@@ -2,17 +2,15 @@ import time
 import logging
 import random
 
-from typing import Optional
+from typing import Optional, Generator
 
 from . import util
 from . import constants
 
 
-def schedule(source, sink, period=0.05) -> None:
-    config: dict = {}
-    terminate = False
-
-    while not terminate:
+def try_fetch_config(source) -> Generator[Optional[list[dict]], None, None]:
+    """Try reading input queue untile sentinel is found."""
+    while True:
         request = None
         if not source.empty():
             try:
@@ -20,16 +18,28 @@ def schedule(source, sink, period=0.05) -> None:
                 if request and not isinstance(request, list):
                     request = None
                 if not request:
-                    terminate = True
+                    break
             except:
                 # should not happen
                 pass
 
+        yield request
+
+
+def schedule(source, sink, period=0.05) -> None:
+    """
+    Pipeline handler, reads from source, processes and puts outputs to sink.
+    Receives configs with URLs and schedules HTTP requests, watches over time and schedule.
+    """
+    config: dict = {}
+
+    for request in try_fetch_config(source):
         tick(request, config, sink)
         time.sleep(period)
 
 
 def validate_config(config: dict) -> dict:
+    """Validate single URL config."""
     if not isinstance(config, dict):
         return False
 
@@ -66,6 +76,7 @@ def validate_config(config: dict) -> dict:
 
 
 def reload_config(request: list, config: dict) -> None:
+    """Reload config (but rather append) and start timing requests for overrides from scratch."""
     new_config = {
         x["url"]: {**validate_config(x)} for x in request if validate_config(x)
     }
@@ -92,6 +103,7 @@ def reload_config(request: list, config: dict) -> None:
 
 
 def tick(request: Optional[list], config: dict, sink) -> None:
+    """Check if we are on schedule and issue HTTP requests."""
     if request:
         reload_config(request, config)
 

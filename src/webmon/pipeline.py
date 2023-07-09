@@ -13,6 +13,7 @@ def make_queue():
 
 
 def retrieve_everything(queue) -> tuple[list, bool]:
+    """Retrieve everything fom the queue in one go."""
     result = []
     last = False
 
@@ -31,6 +32,12 @@ def retrieve_everything(queue) -> tuple[list, bool]:
 
 
 class Pipeline:
+    """
+    Multi threaded pipeline with message queues connecting individual threads.
+    Each pipeline node has a handler function and a pair of queues (intput and output)
+    associated with it.
+    """
+
     def __init__(self):
         self.queues = []
         self.threads = []

@@ -1,4 +1,5 @@
 import re
+from contextlib import contextmanager
 
 from typing import Optional
 
@@ -7,6 +8,8 @@ from multiprocessing import cpu_count
 
 
 class RegexLibrary:
+    """Saves compile regexp object. Supposed to save a tiny bit of CPU time."""
+
     def __init__(self):
         self.lib = {}
 
@@ -31,6 +34,7 @@ def append_status(request: dict, status: str):
 
 
 def search_regex(regex: Optional[re.Pattern], request: dict) -> dict:
+    """Search regex and update status."""
     if regex is not None and regex.search(request["body"]):
         append_status(request, "regexok")
     else:
@@ -42,38 +46,51 @@ def search_regex(regex: Optional[re.Pattern], request: dict) -> dict:
     return request
 
 
+@contextmanager
+def create_pool():
+    """Create process pool."""
+    try:
+        # leave one core alone
+        pool = Pool(processes=max(cpu_count() - 1, 1))
+        yield pool
+    finally:
+        pool.close()
+        pool.join()
+
+
 def validate(source, sink) -> None:
+    """
+    Pipeline handler that either passes the messages through becuase no regex needed
+    or asks another process to do the heavy loading.
+    """
+
     library = RegexLibrary()
 
-    pool = Pool(processes=max(cpu_count() - 1, 1))  # leave one core alone
+    with create_pool() as pool:
+        while batch := source.get():
+            out = []
+            for message in batch:
+                pending = False
+                if regex := message.get("regex", None):
+                    if body := message.get("body", None):
+                        if library(regex):
+                            pending = True
 
-    while batch := source.get():
-        out = []
-        for message in batch:
-            pending = False
-            if regex := message.get("regex", None):
-                if body := message.get("body", None):
-                    if library(regex):
-                        pending = True
+                            def forward(request: dict):
+                                sink.put([request])
 
-                        def forward(request: dict):
-                            sink.put([request])
-
-                        pool.apply_async(
-                            search_regex,
-                            [library(regex), message],
-                            callback=forward,
-                        )
+                            pool.apply_async(
+                                search_regex,
+                                [library(regex), message],
+                                callback=forward,
+                            )
+                        else:
+                            append_status(message, "regexfail")
                     else:
                         append_status(message, "regexfail")
-                else:
-                    append_status(message, "regexfail")
 
-            if not pending:
-                out.append(message)
+                if not pending:
+                    out.append(message)
 
-        if out:
-            sink.put(out)
-
-    pool.close()
-    pool.join()
+            if out:
+                sink.put(out)
